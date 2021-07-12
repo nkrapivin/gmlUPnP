@@ -8,6 +8,7 @@
 #macro UPNP_USER_AGENT        "gmlUPNP/1.0 (GM_runtime_version; " + GM_runtime_version + ")"
 #macro UPNP_SOAP_ACTION       "urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"
 #macro UPNP_DELSOAP_ACTION    "urn:schemas-upnp-org:service:WANIPConnection:1#DeletePortMapping"
+#macro UPNP_EXTSOAP_ACTION    "urn:schemas-upnp-org:service:WANIPConnection:1#GetExternalIPAddress"
 
 // Enums:
 enum UPNP_CALLBACK_TYPE {
@@ -18,6 +19,7 @@ enum UPNP_CALLBACK_TYPE {
 	SOAP,
 	LOCAL,
 	IGD,
+	EXTERNAL,
 	
 	MAX
 };
@@ -59,6 +61,20 @@ function gmlUPNP_protocolStringify(protvalue) {
 		case UPNP_PORT_PROTOCOL.UDP: return "UDP";
 		default: return "";
 	}
+}
+
+/// @function gmlUPNP_parseExternalIp(soapxml)
+/// @description Parses GetExternalIPAddress SOAP XML response into an IP address.
+/// @param {string} soapxml SOAP XML response from router
+/// @returns {string} IP address
+function gmlUPNP_parseExternalIp(soapxml) {
+	var theip = soapxml;
+	
+	var pos = string_pos("<NewExternalIPAddress>", theip) + string_length("<NewExternalIPAddress>");
+	var posend = string_pos("</NewExternalIPAddress>", theip);
+	theip = string_copy(theip, pos, posend - pos);
+	
+	return theip;
 }
 
 // Classes:
@@ -243,6 +259,36 @@ function gmlUPNP() constructor {
 		else {
 			m_ipc_url = ipcurl;
 		}
+		
+		return self;
+	};
+	
+	static getExternalIp = function() {
+		var reqstring = new gmlUPNPStringBuilder()
+			.append("<?xml version=\"1.0\"?>")
+				.append("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">")
+					.append("<s:Body>")
+						.append("<u:GetExternalIPAddress xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:1\">")
+						.append("</u:GetExternalIPAddress>")
+					.append("</s:Body>")
+				.append("</s:Envelope>")
+			.toString();
+			
+		var hostport = getHostFromIpcUrl();	
+		
+		var hmap = ds_map_create();
+		hmap[? "Host"] = hostport;
+		hmap[? "User-Agent"] = UPNP_USER_AGENT;
+		hmap[? "Cache-Control"] = "no-cache";
+		hmap[? "Pragma"] = "no-cache";
+		hmap[? "Content-Type"] = "text/xml";
+		hmap[? "Connection"] = "Close";
+		hmap[? "SOAPAction"] = UPNP_EXTSOAP_ACTION;
+		hmap[? "Content-Length"] = string_byte_length(reqstring);
+		
+		var httpreqid = http_request(m_ipc_url, "POST", hmap, reqstring);
+		m_soap_http = httpreqid;
+		ds_map_destroy(hmap);
 		
 		return self;
 	};
@@ -454,12 +500,16 @@ function gmlUPNP() constructor {
 					var _soapdeldata = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.DELETE, new gmlUPNPSOAPResponse(myxml, myurl));
 					(getCallback())(_soapdeldata);
 				}
+				else if (string_count("GetExternalIPAddress", myxml) > 0) {
+					// dispatch a callback
+					var _soapdeldata = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.EXTERNAL, new gmlUPNPSOAPResponse(myxml, myurl));
+					(getCallback())(_soapdeldata);
+				}
 				else {
 					// dispatch a callback
 					var _soapdata = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.SOAP, new gmlUPNPSOAPResponse(myxml, myurl));
 					(getCallback())(_soapdata);
 				}
-				
 				
 				return self;
 			}

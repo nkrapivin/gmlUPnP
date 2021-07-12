@@ -48,7 +48,7 @@ onResult = function(e) {
 			DumpStringToFile("igd.xml", igdxml);
 			
 			UPNP.setIpcUrl(undefined); // don't parse the XML here, set it to default.
-			UPNP.addMapping(ip, targetdesc, targetport, undefined, UPNP_PORT_PROTOCOL.TCP, undefined);
+			UPNP.getExternalIp();
 			
 			break;
 		}
@@ -73,6 +73,17 @@ onResult = function(e) {
 			ip = myip;
 			UPNP.getIgd();
 			
+			break;
+		};
+		
+		case UPNP_CALLBACK_TYPE.EXTERNAL: {
+			var myxml = e.getData().getXml();
+			var myextip = gmlUPNP_parseExternalIp(myxml);
+			
+			append("-- my external ip --");
+			append("ext. ip: ", myextip);
+			
+			UPNP.addMapping(ip, targetdesc, targetport, undefined, UPNP_PORT_PROTOCOL.TCP, undefined);
 			break;
 		};
 		
