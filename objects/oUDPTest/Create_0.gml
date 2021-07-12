@@ -4,6 +4,11 @@ drawString = undefined;
 ip = "";
 igdxml = "";
 
+game_set_speed(0, gamespeed_fps);
+
+targetport = 1337;
+targetdesc = "gmlUPNP test application";
+
 append = function() {
 	for (var i = 0; i < argument_count; ++i)
 		drawString += string(argument[i]);
@@ -16,7 +21,8 @@ clear = function() {
 };
 
 onResult = function(e) {
-	switch (e.getType()) {
+	var _cbtype = e.getType();
+	switch (_cbtype) {
 		case UPNP_CALLBACK_TYPE.MSEARCH: {
 			var mdat = e.getData();
 			
@@ -45,6 +51,16 @@ onResult = function(e) {
 			break;
 		}
 		
+		case UPNP_CALLBACK_TYPE.DELETE: {
+			var ddat = e.getData();
+			
+			append("-- Port mapping deleted --");
+			append("url: ", ddat.getUrl());
+			append();
+			
+			break;
+		}
+		
 		case UPNP_CALLBACK_TYPE.LOCAL: {
 			var myip = e.getData().getIp();
 			
@@ -54,7 +70,7 @@ onResult = function(e) {
 			
 			ip = myip;
 			
-			UPNP.addMapping(ip, "JS Rocks, hi from gmlUPnP", 1337, 1337, UPNP_PORT_PROTOCOL.TCP, 0);
+			UPNP.addMapping(ip, targetdesc, targetport, undefined, UPNP_PORT_PROTOCOL.TCP, undefined);
 			
 			break;
 		};
@@ -63,14 +79,16 @@ onResult = function(e) {
 			var pdat = e.getData();
 			
 			append("-- Port mapping ok --");
+			append("url: ", pdat.getUrl());
 			append();
 			
+			// a typical sample network server (doesn't rely on any gmlUPNP stuff!)
 			with (instance_create_layer(x, y, layer, oSampleServer)) {
 				port = 1337;
 				maxclients = 8;
 			}
 			
-			append("-- Sample Server started --");
+			append("-- Sample Server started, use ncat or nc or netcat... --");
 			
 			break;
 		}
@@ -79,8 +97,8 @@ onResult = function(e) {
 			var wdat = e.getData();
 			
 			append("-- Weird callback --");
-			append("Type: ", e.getType());
-			append("Data: ", e.getData());
+			append("Type: ", _cbtype);
+			append("Data: ", wdat);
 			append();
 			break;
 		}
@@ -93,5 +111,8 @@ UPNP.setCallback(onResult);
 UPNP.startMSearch();
 append("Searching for an IGD device...");
 
+// now wait for the result in onResult...
 
-// alarm[0] = 5 * game_get_speed(gamespeed_fps);
+// oh, let's take down the whole thing after 15 seconds.
+mystart = get_timer();
+mytime = 15 * 1000000;

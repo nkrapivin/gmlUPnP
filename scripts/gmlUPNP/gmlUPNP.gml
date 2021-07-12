@@ -434,7 +434,7 @@ function gmlUPNP() constructor {
 				}
 				else {
 					// dispatch a callback
-					var _soapdata = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.DELETE, new gmlUPNPSOAPResponse(myxml, myurl));
+					var _soapdata = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.SOAP, new gmlUPNPSOAPResponse(myxml, myurl));
 					(getCallback())(_soapdata);
 				}
 				
