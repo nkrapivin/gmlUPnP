@@ -5,5 +5,6 @@ if (ip != "") {
 	UPNP.deleteMapping(targetport, UPNP_PORT_PROTOCOL.TCP, ip);
 }
 else {
-	append("Uh oh, try restarting the sample?");	
+	append("Uh oh, try restarting the sample?");
+	throw "Unable to establish a port mapping in needed time :(";
 }

@@ -84,7 +84,7 @@ onResult = function(e) {
 			
 			// a typical sample network server (doesn't rely on any gmlUPNP stuff!)
 			with (instance_create_layer(x, y, layer, oSampleServer)) {
-				port = 1337;
+				port = targetport;
 				maxclients = 8;
 			}
 			
@@ -116,3 +116,5 @@ append("Searching for an IGD device...");
 // oh, let's take down the whole thing after 15 seconds.
 mystart = get_timer();
 mytime = 15 * 1000000;
+
+
