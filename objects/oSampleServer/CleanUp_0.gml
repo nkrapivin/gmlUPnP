@@ -1,0 +1,3 @@
+/// @description clean up...
+network_destroy(serv);
+serv = undefined;
