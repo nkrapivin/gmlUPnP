@@ -32,7 +32,6 @@ onResult = function(e) {
 			append();
 			
 			UPNP.determineLocalIp();
-			UPNP.getIgd();
 			break;
 		}
 		
@@ -47,6 +46,9 @@ onResult = function(e) {
 			append();
 			
 			DumpStringToFile("igd.xml", igdxml);
+			
+			UPNP.setIpcUrl(undefined); // don't parse the XML here, set it to default.
+			UPNP.addMapping(ip, targetdesc, targetport, undefined, UPNP_PORT_PROTOCOL.TCP, undefined);
 			
 			break;
 		}
@@ -69,8 +71,7 @@ onResult = function(e) {
 			append();
 			
 			ip = myip;
-			
-			UPNP.addMapping(ip, targetdesc, targetport, undefined, UPNP_PORT_PROTOCOL.TCP, undefined);
+			UPNP.getIgd();
 			
 			break;
 		};
@@ -84,7 +85,7 @@ onResult = function(e) {
 			
 			// a typical sample network server (doesn't rely on any gmlUPNP stuff!)
 			with (instance_create_layer(x, y, layer, oSampleServer)) {
-				port = targetport;
+				port = other.targetport;
 				maxclients = 8;
 			}
 			

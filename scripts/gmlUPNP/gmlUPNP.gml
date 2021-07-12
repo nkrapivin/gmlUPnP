@@ -200,6 +200,8 @@ function gmlUPNP() constructor {
 	m_igd_usn = "";
 	m_igd_st = "";
 	
+	m_ipc_url = "";
+	
 	m_igd_http = -1;
 	
 	m_local_srv = -1;
@@ -219,13 +221,30 @@ function gmlUPNP() constructor {
 		return m_callback;	
 	};
 	
-	static getRouterIp = function() {
+	static getDefaultIpcUrl = function() {
 		// this implementation is very hacky, but it does the job.
 		var str1 = m_igd_location;
-		str1 = string_replace(str1, "http://", "");
-		str1 = string_copy(str1, 1, string_pos(":", str1) - 1);
-		
+		str1 = string_copy(str1, 1, string_pos_ext("/", str1, string_pos(".", str1)));
+		str1 += "ipc";
 		return str1;
+	};
+	
+	static getHostFromIpcUrl = function() {
+		var str1 = m_ipc_url;
+		str1 = string_replace(str1, "http://", "");
+		str1 = string_copy(str1, 1, string_pos("/", str1) - 1);
+		return str1;
+	};
+	
+	static setIpcUrl = function(ipcurl) {
+		if (is_undefined(ipcurl)) {
+			m_ipc_url = getDefaultIpcUrl();
+		}
+		else {
+			m_ipc_url = ipcurl;
+		}
+		
+		return self;
 	};
 	
 	static deleteMapping = function(port, protocol, host) {
@@ -259,7 +278,7 @@ function gmlUPNP() constructor {
 				.append("</s:Envelope>")
 			.toString();
 			
-		var hostport = getRouterIp() + ":" + string(UPNP_IPV4_PORT);	
+		var hostport = getHostFromIpcUrl();	
 		
 		var hmap = ds_map_create();
 		hmap[? "Host"] = hostport;
@@ -271,8 +290,9 @@ function gmlUPNP() constructor {
 		hmap[? "SOAPAction"] = UPNP_DELSOAP_ACTION;
 		hmap[? "Content-Length"] = string_byte_length(reqstring);
 		
-		var httpreqid = http_request("http://" + hostport + "/ipc", "POST", hmap, reqstring);
+		var httpreqid = http_request(m_ipc_url, "POST", hmap, reqstring);
 		m_soap_http = httpreqid;
+		ds_map_destroy(hmap);
 		
 		return self;
 	}
@@ -323,10 +343,10 @@ function gmlUPNP() constructor {
 				.append("</s:Envelope>")
 			.toString();
 		
-		var hostport = getRouterIp() + ":" + string(UPNP_IPV4_PORT);
+		var hostport = getHostFromIpcUrl();
 		
 		var hmap = ds_map_create();
-		hmap[? "Host"] = getRouterIp() + ":" + string(UPNP_IPV4_PORT);
+		hmap[? "Host"] = hostport;
 		hmap[? "User-Agent"] = UPNP_USER_AGENT;
 		hmap[? "Cache-Control"] = "no-cache";
 		hmap[? "Pragma"] = "no-cache";
@@ -335,8 +355,9 @@ function gmlUPNP() constructor {
 		hmap[? "SOAPAction"] = UPNP_SOAP_ACTION;
 		hmap[? "Content-Length"] = string_byte_length(reqstring);
 		
-		var httpreqid = http_request("http://" + hostport + "/ipc", "POST", hmap, reqstring);
+		var httpreqid = http_request(m_ipc_url, "POST", hmap, reqstring);
 		m_soap_http = httpreqid;
+		ds_map_destroy(hmap);
 		
 		return self;
 	};
@@ -417,8 +438,9 @@ function gmlUPNP() constructor {
 		}
 		
 		if (the_async_load[? "id"] == m_soap_http) {
-			m_soap_http = -1;
 			if (the_async_load[? "status"] == 0 && the_async_load[? "http_status"] == 200 && string_length(the_async_load[? "result"]) > 1) {
+				m_soap_http = -1;
+				ds_map_destroy(the_async_load[? "response_headers"]);
 				var myxml = the_async_load[? "result"];
 				var myurl = the_async_load[? "url"];
 				
