@@ -215,6 +215,7 @@ function gmlUPNP() constructor {
 	m_igd_server = "";
 	m_igd_usn = "";
 	m_igd_st = "";
+	m_igd_xml = "";
 	
 	m_ipc_url = "";
 	
@@ -237,12 +238,39 @@ function gmlUPNP() constructor {
 		return m_callback;	
 	};
 	
+	static findRelativeIpcPart = function() {
+		// nik is too lazy to use SNAP to parse an XML, the show, the movie.
+		
+		
+		var lookfor = "urn:schemas-upnp-org:service:WANIPConnection:";
+		var lookfor2 = "<controlURL>";
+		var lookfor3 = "</controlURL>";
+		var pos1 = string_pos(lookfor, m_igd_xml) + string_length(lookfor);
+		var pos2 = string_pos_ext(lookfor2, m_igd_xml, pos1) + string_length(lookfor2);
+		var pos3 = string_pos_ext(lookfor3, m_igd_xml, pos2);
+		var count = pos3 - pos2;
+		
+		var val = string_copy(m_igd_xml, pos2, count);
+		
+		// get rid of newlines if there are any.
+		val = string_replace_all(string_replace_all(val, "\r", ""), "\n", "");
+		
+		return val;
+	};
+	
 	static getDefaultIpcUrl = function() {
 		// this implementation is very hacky, but it does the job.
-		var str1 = m_igd_location;
-		str1 = string_copy(str1, 1, string_pos_ext("/", str1, string_pos(".", str1)));
-		str1 += "ipc";
-		return str1;
+		var ipcpart = findRelativeIpcPart();
+		if (string_count("http://", ipcpart) > 0) {
+			// full URL
+			return ipcpart;
+		}
+		else {
+			var str1 = m_igd_location;
+			str1 = string_copy(str1, 1, string_pos_ext("/", str1, string_length("http://") + 1) - 1);
+			str1 += ipcpart;
+			return str1;
+		}
 	};
 	
 	static getHostFromIpcUrl = function() {
@@ -474,6 +502,8 @@ function gmlUPNP() constructor {
 			if (the_async_load[? "status"] == 0 && the_async_load[? "http_status"] == 200 && string_length(the_async_load[? "result"]) > 1) {
 				var _hresult = the_async_load[? "result"];
 				var _hurl = the_async_load[? "url"];
+				
+				m_igd_xml = _hresult;
 				
 				// dispatch a callback
 				var _igdxml = new gmlUPNPCallbackData(UPNP_CALLBACK_TYPE.IGD, new gmlUPNPIGDResponse(_hresult, _hurl));

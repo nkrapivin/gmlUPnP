@@ -1,5 +1,19 @@
 /// @description Test.
 
+/*  The whole process goes something like this:
+ *  - First the MSearch callback is executed, we get a path to an IGD XML file.
+ *  - Then we try to determine our local ip address via a broadcast.
+ *  - After getting our IP, we download the IGD XML file and "parse" it.
+ *  - After we found an important IPC URL in the IGD XML file, we try to get our WAN External IP.
+ *  - Okay, we know our external IP, you can draw it in the main menu or whatever.
+ *  - Then we actually ask the router nicely to open a port.
+ *  - After opening a port, we start a simple TCP listener server, just as an example, and wait 15 secs.
+ *  - After the time had passed, we ask the router to delete the port mapping.
+ *  - After the port mapping has closed, you can return to main menu or idk.
+ *
+ */
+
+
 drawString = undefined;
 ip = "";
 igdxml = "";
